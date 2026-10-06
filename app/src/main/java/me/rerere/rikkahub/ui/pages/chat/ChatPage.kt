@@ -97,6 +97,7 @@ import me.rerere.rikkahub.ui.hooks.EditStateContent
 import me.rerere.rikkahub.ui.hooks.useEditState
 import me.rerere.rikkahub.ui.theme.LocalGlassHazeState
 import me.rerere.rikkahub.ui.theme.rememberGlassConfig
+import me.rerere.rikkahub.ui.theme.rememberGlassSurface
 import me.rerere.rikkahub.utils.base64Decode
 import me.rerere.rikkahub.utils.navigateToChatPage
 import org.koin.androidx.compose.koinViewModel
