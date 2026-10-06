@@ -21,8 +21,8 @@ android {
         applicationId = "me.rerere.rikkahub.lizi"
         minSdk = 26
         targetSdk = 37
-        versionCode = 176
-        versionName = "v1.1.10-lizi.2"
+        versionCode = 177
+        versionName = "v1.1.10-lizi.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
