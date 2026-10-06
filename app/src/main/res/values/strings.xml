@@ -733,7 +733,7 @@
   <string name="setting_display_page_glass_intensity_title">Glass Intensity</string>
   <string name="setting_display_page_glass_lite_mode_desc">Translucent only, without backdrop blur (saves power)</string>
   <string name="setting_display_page_glass_lite_mode_title">Lite Mode</string>
-  <string name="setting_display_page_app_background_desc">Shown behind the whole app; the chat page still prefers the assistant's own background</string>
+  <string name="setting_display_page_app_background_desc">Shown behind the whole app; the chat page still prefers the assistant background when set</string>
   <string name="setting_display_page_app_background_title">App Background</string>
   <string name="theme_name_glass_gray">Glass Gray</string>
   <string name="setting_display_page_enable_latex_rendering_desc">Render mathematical expressions and formulas using LaTeX syntax</string>
