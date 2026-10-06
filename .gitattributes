@@ -1,0 +1,8 @@
+# 统一换行符：这些文件在 Linux（GitHub runner）上执行，
+# Windows 下编辑如果带进 CRLF，会让 shell 脚本和 YAML 出现莫名其妙的报错。
+*.sh    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.json  text eol=lf
+gradlew text eol=lf
+gradlew.bat text eol=crlf

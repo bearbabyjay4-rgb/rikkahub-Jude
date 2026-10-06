@@ -1,8 +1,16 @@
 name: Build 栗子版 APK
 
-# 云编译：GitHub 的机器上跑 Gradle，产出你签名过的 APK，不用在本机装 Android Studio。
+# 云编译：在 GitHub 的机器上跑 Gradle，产出用你自己密钥签名的 APK，
+# 不用在本机装 Android Studio / Android SDK。
 on:
   workflow_dispatch:        # 手动触发（Actions 页面点 Run workflow）
+    inputs:
+      variant:
+        description: '编译哪个版本'
+        type: choice
+        options: [release, debug, both]
+        default: release
+        required: true
   push:
     branches: [main]
     paths-ignore:           # 只改文档不触发构建，省时间
@@ -30,7 +38,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      # 缓存 Gradle 依赖，第二次以后能快很多（首次仍需 20-40 分钟）
+      # 缓存 Gradle 依赖，第二次以后快很多（首次仍要 20-40 分钟）
       - name: 缓存 Gradle
         uses: actions/cache@v4
         with:
@@ -41,8 +49,8 @@ jobs:
           restore-keys: gradle-${{ runner.os }}-
 
       # ---------------------------------------------------------------
-      # 准备签名材料。secret 里存的是 keystore 的 base64 和密码。
-      # 这里把它们还原成文件和 local.properties（app/build.gradle.kts 就是从这里读的）。
+      # 准备签名材料：secret 里存的是 keystore 的 base64 和密码。
+      # 还原成文件和 local.properties —— app/build.gradle.kts 就是从后者读取的。
       # ---------------------------------------------------------------
       - name: 准备签名配置
         env:
@@ -54,14 +62,14 @@ jobs:
           set -euo pipefail
 
           if [ -z "${KEYSTORE_BASE64:-}" ]; then
-            echo "::error title=缺少签名密钥::仓库还没配 KEYSTORE_BASE64 secret。见 notes/Phase0-操作手册.md"
+            echo "::error title=缺少签名密钥::仓库还没配 KEYSTORE_BASE64 secret。请看 notes/Phase0-操作手册.md"
             exit 1
           fi
 
           KEYSTORE_PATH="$RUNNER_TEMP/release.p12"
           printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
 
-          # storeFile 写成绝对路径：build.gradle.kts 里的 file() 会按绝对路径解析
+          # storeFile 用绝对路径：build.gradle.kts 里的 file() 会按绝对路径解析
           cat > local.properties <<EOF
           storeFile=$KEYSTORE_PATH
           storePassword=$KEYSTORE_PASSWORD
@@ -69,10 +77,10 @@ jobs:
           keyPassword=$KEY_PASSWORD
           EOF
 
-          echo "local.properties 已写入（内容隐去密码）："
+          echo "local.properties 已写入（密码隐去）："
           sed 's/^\(storePassword\|keyPassword\)=.*/\1=***/' local.properties
 
-      # 先确认密钥真能被 Java 读出来。这一步失败比构建跑 30 分钟再失败划算得多。
+      # 先确认密钥真能被 Java 读出来。这一步早点失败，比构建跑 30 分钟再失败划算。
       - name: 验证签名密钥可用
         run: |
           set -euo pipefail
@@ -83,7 +91,7 @@ jobs:
 
       # ---------------------------------------------------------------
       # google-services.json：优先用 secret 里的真 Firebase 配置；
-      # 没配就用仓库里自带的占位文件（能编译、能跑，只是 Crashlytics 不工作）。
+      # 没配就用仓库里的占位文件（能编译、能跑，只是 Crashlytics 不上报）。
       # ---------------------------------------------------------------
       - name: 准备 google-services.json
         env:
@@ -98,24 +106,36 @@ jobs:
             echo "使用占位 google-services.json（正常，不影响功能）"
           fi
 
-      - name: 编译 public release
+      - name: 编译
+        env:
+          VARIANT: ${{ inputs.variant || 'release' }}
         run: |
+          set -euo pipefail
           chmod +x gradlew
-          ./gradlew :app:assemblePublicRelease --stacktrace
+          case "$VARIANT" in
+            release) TASKS=":app:assemblePublicRelease" ;;
+            debug)   TASKS=":app:assemblePublicDebug" ;;
+            both)    TASKS=":app:assemblePublicRelease :app:assemblePublicDebug" ;;
+            *)       echo "::error::未知 variant: $VARIANT"; exit 1 ;;
+          esac
+          echo "编译任务：$TASKS"
+          ./gradlew $TASKS --stacktrace
 
-      # 确认产物真的签过名——没签名的 APK 装不上，早发现早好
-      - name: 检查 APK 签名
+      # release 产物必须签名过——没签名的 APK 装不上，早发现早好
+      - name: 检查产物
         run: |
           set -euo pipefail
           shopt -s nullglob
-          APKS=(app/build/outputs/apk/public/release/*.apk)
+          APKS=(app/build/outputs/apk/public/*/*.apk)
           if [ ${#APKS[@]} -eq 0 ]; then
             echo "::error::没有产出 APK"
-            ls -R app/build/outputs/apk || true
+            ls -R app/build/outputs/apk 2>/dev/null || true
             exit 1
           fi
           for apk in "${APKS[@]}"; do
-            case "$apk" in *unsigned*) echo "::error::$apk 未签名"; exit 1;; esac
+            case "$apk" in
+              *unsigned*) echo "::error::$apk 未签名，装不上"; exit 1 ;;
+            esac
             echo "== $apk =="
             ls -lh "$apk"
           done
@@ -124,6 +144,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rikkahub-lizi-apk
-          path: app/build/outputs/apk/public/release/*.apk
+          path: app/build/outputs/apk/public/*/*.apk
           if-no-files-found: error
           retention-days: 30
