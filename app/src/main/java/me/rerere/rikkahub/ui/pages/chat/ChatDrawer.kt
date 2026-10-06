@@ -78,6 +78,7 @@ import me.rerere.rikkahub.ui.hooks.readBooleanPreference
 import me.rerere.rikkahub.ui.hooks.rememberIsPlayStoreVersion
 import me.rerere.rikkahub.ui.hooks.useEditState
 import me.rerere.rikkahub.ui.modifier.onClick
+import me.rerere.rikkahub.ui.theme.rememberGlassSurface
 import me.rerere.rikkahub.utils.navigateToChatPage
 import me.rerere.rikkahub.utils.toDp
 import org.koin.androidx.compose.koinViewModel
@@ -139,8 +140,13 @@ fun ChatDrawerContent(
     // Menu popup 状态
     var showMenuPopup by remember { mutableStateOf(false) }
 
+    // 「毛玻璃主题」：侧边抽屉同样做玻璃（真模糊时透明底 + Haze 着色）
+    val drawerGlass = rememberGlassSurface(MaterialTheme.colorScheme.surfaceContainerLow)
     ModalDrawerSheet(
-        modifier = Modifier.width(300.dp)
+        modifier = Modifier
+            .width(300.dp)
+            .then(drawerGlass.modifier),
+        drawerContainerColor = drawerGlass.color,
     ) {
         Column(
             modifier = Modifier.padding(8.dp),

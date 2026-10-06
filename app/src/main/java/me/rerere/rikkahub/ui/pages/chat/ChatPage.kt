@@ -57,8 +57,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import dev.chrisbanes.haze.blur.blurEffect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import me.rerere.ai.provider.Model
@@ -93,6 +96,8 @@ import me.rerere.rikkahub.ui.context.Navigator
 import me.rerere.rikkahub.ui.hooks.ChatInputState
 import me.rerere.rikkahub.ui.hooks.EditStateContent
 import me.rerere.rikkahub.ui.hooks.useEditState
+import me.rerere.rikkahub.ui.theme.LocalGlassHazeState
+import me.rerere.rikkahub.ui.theme.rememberGlassConfig
 import me.rerere.rikkahub.utils.base64Decode
 import me.rerere.rikkahub.utils.navigateToChatPage
 import org.koin.androidx.compose.koinViewModel
@@ -314,7 +319,9 @@ private fun ChatPageContent(
         anonymousQuestionBoxVM.observeHasUnread(anonymousQuestionScopeId)
     }.collectAsStateWithLifecycle(false)
     val anonymousQuestionUnread = anonymousQuestionBoxEnabled && rawAnonymousQuestionUnread
-    val hazeState = rememberHazeState()
+    // 「毛玻璃主题」：优先用 App 根提供的全局模糊源（背景图统一注册在同一个 state 上），
+    // 这样聊天页的气泡/顶栏/输入栏都能模糊"身后的壁纸"，与其他页面行为一致。
+    val hazeState = LocalGlassHazeState.current ?: rememberHazeState()
 
     TTSAutoPlay(
         vm = vm,
@@ -333,8 +340,10 @@ private fun ChatPageContent(
         if (!anonymousQuestionBoxEnabled) anonymousQuestionBoxVisible = false
     }
 
+    // 「毛玻璃主题」开启时，聊天页底色透明，让助手背景图（或 App 背景图）透上来
+    val glassConfig = rememberGlassConfig()
     Surface(
-        color = MaterialTheme.colorScheme.background,
+        color = if (glassConfig != null) Color.Transparent else MaterialTheme.colorScheme.background,
         modifier = Modifier.fillMaxSize()
     ) {
         AssistantBackground(
@@ -346,6 +355,7 @@ private fun ChatPageContent(
             topBar = {
                 TopBar(
                     settings = setting,
+                    hazeState = hazeState,
                     conversation = conversation,
                     bigScreen = bigScreen,
                     drawerState = drawerState,
@@ -715,6 +725,7 @@ private fun ChatPageContent(
 @Composable
 private fun TopBar(
     settings: Settings,
+    hazeState: HazeState,
     conversation: Conversation,
     drawerState: DrawerState,
     bigScreen: Boolean,
@@ -836,8 +847,28 @@ private fun TopBar(
         }
     }
 
+    // 「毛玻璃主题」：顶栏做真实背景模糊（透明底 + Haze 着色），轻量模式则用半透明底色
+    val glassConfig = rememberGlassConfig()
+    val glassBarBase = MaterialTheme.colorScheme.surfaceContainerLow
+    val glassBarStyle = if (glassConfig != null) glassConfig.hazeStyle(glassBarBase) else null
     TopAppBar(
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+        modifier = if (glassConfig != null && glassConfig.realBlur && glassBarStyle != null) {
+            Modifier.hazeEffect(hazeState) {
+                blurEffect {
+                    blurRadius = glassConfig.blurRadius
+                    style = glassBarStyle
+                }
+            }
+        } else {
+            Modifier
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = if (glassConfig != null && !glassConfig.realBlur) {
+                glassBarBase.copy(alpha = glassConfig.alpha)
+            } else {
+                Color.Transparent
+            },
+        ),
         navigationIcon = {
             if (!bigScreen) {
                 IconButton(

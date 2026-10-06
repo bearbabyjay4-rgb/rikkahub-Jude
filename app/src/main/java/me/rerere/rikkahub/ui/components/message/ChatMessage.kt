@@ -1,12 +1,17 @@
 package me.rerere.rikkahub.ui.components.message
 
 import android.content.Intent
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.using
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -104,6 +109,8 @@ import me.rerere.rikkahub.ui.context.LocalTTSState
 import me.rerere.rikkahub.ui.hooks.rememberChatTtsPlayback
 import me.rerere.rikkahub.ui.theme.LocalChatFontFamily
 import me.rerere.rikkahub.ui.theme.rememberChatFontFamily
+import me.rerere.rikkahub.ui.theme.rememberGlassConfig
+import me.rerere.rikkahub.ui.theme.rememberGlassSurface
 import me.rerere.rikkahub.ui.theme.extendColors
 import me.rerere.rikkahub.utils.toChatTtsText
 import me.rerere.rikkahub.utils.JsonInstant
@@ -479,11 +486,16 @@ internal fun MessagePartsBlock(
                                     onClick = onUserMessageClick,
                                 )
                             } else {
+                                // 「毛玻璃主题」：用户气泡同样玻璃化（真模糊时底色透明，由 Haze 着色）
+                                val userBubbleShape = RoundedCornerShape(16.dp)
+                                val userGlassSurface = rememberGlassSurface(MaterialTheme.colorScheme.primaryContainer)
                                 val userTextContent = @Composable {
                                     Surface(
-                                        modifier = Modifier.animateContentSize(),
-                                        shape = RoundedCornerShape(16.dp),
-                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier
+                                            .animateContentSize()
+                                            .then(userGlassSurface.modifier),
+                                        shape = userBubbleShape,
+                                        color = userGlassSurface.color,
                                         onClick = { onUserMessageClick?.invoke() },
                                     ) {
                                         Column(modifier = Modifier.padding(8.dp)) {
@@ -512,48 +524,67 @@ internal fun MessagePartsBlock(
                             // 分段发送开启后：流式过程中仍是单气泡，生成完成后按段落气泡渲染并逐条弹出
                             val useParagraphBubbles = assistant?.momentsChatStyle == true ||
                                 (splitMessagesOn && !loading)
-                            if (useParagraphBubbles) {
-                                AssistantTextContent(
-                                    content = assistantContent,
-                                    onClickCitation = handleClickCitation,
-                                    selectionEnabled = !loading,
-                                    showElevenLabsAudioTagAnnotations = showElevenLabsAudioTagAnnotations,
-                                    showParagraphTtsButtons = settings.displaySetting.showParagraphTtsButtons,
-                                    paragraphBubbleMode = true,
-                                    modifier = Modifier.animateContentSize(),
-                                    onTtsSpeak = onTtsSpeak,
-                                    splitReveal = splitReveal.takeIf { splitMessagesOn && part === lastTextPart },
-                                )
-                            } else if (settings.displaySetting.showAssistantBubble) {
-                                Surface(
-                                    modifier = Modifier.animateContentSize(),
-                                    shape = RoundedCornerShape(16.dp),
-                                    color = assistantMessageBubbleColor(),
-                                ) {
-                                    Column(modifier = Modifier.padding(8.dp)) {
-                                        AssistantTextContent(
-                                            content = assistantContent,
-                                            onClickCitation = handleClickCitation,
-                                            selectionEnabled = !loading,
-                                            showElevenLabsAudioTagAnnotations = showElevenLabsAudioTagAnnotations,
-                                            showParagraphTtsButtons = settings.displaySetting.showParagraphTtsButtons,
-                                            paragraphBubbleMode = false,
-                                            onTtsSpeak = onTtsSpeak,
+                            // 「折叠感」优化：完成那一瞬间从单气泡切成段落气泡时，用约 200ms 的高度收缩过渡
+                            // （AnimatedContent 只在目标变化时播动画，不拖慢流式输出期间的气泡增长）。
+                            AnimatedContent(
+                                targetState = useParagraphBubbles,
+                                transitionSpec = {
+                                    fadeIn(tween(180)) togetherWith fadeOut(tween(120)) using
+                                        SizeTransform(
+                                            clip = true,
+                                            sizeAnimationSpec = { _, _ -> tween(200) },
                                         )
+                                },
+                                label = "AssistantSplitTransition",
+                            ) { paragraphMode ->
+                                if (paragraphMode) {
+                                    AssistantTextContent(
+                                        content = assistantContent,
+                                        onClickCitation = handleClickCitation,
+                                        selectionEnabled = !loading,
+                                        showElevenLabsAudioTagAnnotations = showElevenLabsAudioTagAnnotations,
+                                        showParagraphTtsButtons = settings.displaySetting.showParagraphTtsButtons,
+                                        paragraphBubbleMode = true,
+                                        modifier = Modifier.animateContentSize(),
+                                        onTtsSpeak = onTtsSpeak,
+                                        splitReveal = splitReveal.takeIf { splitMessagesOn && part === lastTextPart },
+                                    )
+                                } else if (settings.displaySetting.showAssistantBubble) {
+                                    // 「毛玻璃主题」：助手单气泡玻璃化
+                                    val assistantBubbleShape = RoundedCornerShape(16.dp)
+                                    val assistantGlassSurface = rememberGlassSurface(assistantMessageBubbleColor())
+                                    Surface(
+                                        modifier = Modifier
+                                            .animateContentSize()
+                                            .then(assistantGlassSurface.modifier),
+                                        shape = assistantBubbleShape,
+                                        color = assistantGlassSurface.color,
+                                    ) {
+                                        Column(modifier = Modifier.padding(8.dp)) {
+                                            AssistantTextContent(
+                                                content = assistantContent,
+                                                onClickCitation = handleClickCitation,
+                                                selectionEnabled = !loading,
+                                                showElevenLabsAudioTagAnnotations = showElevenLabsAudioTagAnnotations,
+                                                showParagraphTtsButtons = settings.displaySetting.showParagraphTtsButtons,
+                                                paragraphBubbleMode = false,
+                                                onTtsSpeak = onTtsSpeak,
+                                            )
+                                        }
                                     }
+                                } else {
+                                    AssistantTextContent(
+                                        content = assistantContent,
+                                        onClickCitation = handleClickCitation,
+                                        selectionEnabled = !loading,
+                                        showElevenLabsAudioTagAnnotations = showElevenLabsAudioTagAnnotations,
+                                        showParagraphTtsButtons = settings.displaySetting.showParagraphTtsButtons,
+                                        paragraphBubbleMode = false,
+                                        modifier = Modifier
+                                            .animateContentSize(),
+                                        onTtsSpeak = onTtsSpeak,
+                                    )
                                 }
-                            } else {
-                                AssistantTextContent(
-                                    content = assistantContent,
-                                    onClickCitation = handleClickCitation,
-                                    selectionEnabled = !loading,
-                                    showElevenLabsAudioTagAnnotations = showElevenLabsAudioTagAnnotations,
-                                    showParagraphTtsButtons = settings.displaySetting.showParagraphTtsButtons,
-                                    paragraphBubbleMode = false,
-                                    modifier = Modifier
-                                        .animateContentSize(),
-                                    onTtsSpeak = onTtsSpeak,
-                                )
                             }
                         }
                     }
@@ -1013,11 +1044,16 @@ private fun AssistantTextParagraphs(
                         }
                     }
                     if (paragraphBubbleMode) {
+                        // 「毛玻璃主题」：段落气泡玻璃化 + 圆角加大（8dp → 14dp）
+                        val glassConfig = rememberGlassConfig()
+                        val paragraphShape = RoundedCornerShape(if (glassConfig != null) 14.dp else 8.dp)
+                        val paragraphGlassSurface = rememberGlassSurface(paragraphBubbleColor, config = glassConfig)
                         Surface(
                             modifier = Modifier
-                                .animateContentSize(),
-                            shape = RoundedCornerShape(8.dp),
-                            color = paragraphBubbleColor,
+                                .animateContentSize()
+                                .then(paragraphGlassSurface.modifier),
+                            shape = paragraphShape,
+                            color = paragraphGlassSurface.color,
                             contentColor = MaterialTheme.colorScheme.onSurface,
                         ) {
                             paragraphContent(

@@ -4,6 +4,7 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import me.rerere.rikkahub.ui.theme.presets.AutumnThemePreset
 import me.rerere.rikkahub.ui.theme.presets.BlackThemePreset
+import me.rerere.rikkahub.ui.theme.presets.GlassGrayThemePreset
 import me.rerere.rikkahub.ui.theme.presets.OceanThemePreset
 import me.rerere.rikkahub.ui.theme.presets.SakuraThemePreset
 import me.rerere.rikkahub.ui.theme.presets.SpringThemePreset
@@ -21,6 +22,7 @@ data class PresetTheme(
 
 val PresetThemes by lazy {
     listOf(
+        GlassGrayThemePreset,
         SakuraThemePreset,
         OceanThemePreset,
         SpringThemePreset,

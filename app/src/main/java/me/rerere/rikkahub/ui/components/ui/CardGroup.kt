@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemColors
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
@@ -32,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.fastForEachIndexed
 import me.rerere.rikkahub.ui.theme.CustomColors
+import me.rerere.rikkahub.ui.theme.rememberGlassSurface
 
 private val CardGroupCorner = 20.dp
 private val CardGroupItemSpacing = 2.dp
@@ -114,6 +116,8 @@ private fun CardGroupListItem(
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
     )
 
+    // 「毛玻璃主题」：设置/列表卡片统一的玻璃处理（真模糊时透明底由 Haze 着色，轻量模式则半透明）
+    val glassSurface = rememberGlassSurface(MaterialTheme.colorScheme.surfaceBright)
     ListItem(
         headlineContent = item.headlineContent,
         modifier = item.modifier
@@ -126,6 +130,7 @@ private fun CardGroupListItem(
                     bottomEnd = bottomCorner,
                 )
             )
+            .then(glassSurface.modifier)
             .then(
                 if (item.onClick != null) {
                     Modifier.clickable(
@@ -139,7 +144,7 @@ private fun CardGroupListItem(
         supportingContent = item.supportingContent,
         leadingContent = item.leadingContent,
         trailingContent = item.trailingContent,
-        colors = item.colors ?: CustomColors.listItemColors,
+        colors = item.colors ?: ListItemDefaults.colors(containerColor = glassSurface.color),
     )
 }
 

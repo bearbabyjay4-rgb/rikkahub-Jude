@@ -120,6 +120,7 @@ import me.rerere.rikkahub.ui.components.ui.permission.rememberPermissionState
 import me.rerere.rikkahub.ui.context.LocalASRState
 import me.rerere.rikkahub.ui.context.LocalSettings
 import me.rerere.rikkahub.ui.context.LocalToaster
+import me.rerere.rikkahub.ui.theme.rememberGlassConfig
 import me.rerere.rikkahub.ui.hooks.ChatInputState
 import me.rerere.rikkahub.utils.SoundEffectPlayer
 import me.rerere.rikkahub.utils.isAllowedFileType
@@ -162,8 +163,10 @@ fun ChatInput(
     val toaster = LocalToaster.current
     val assistant = settings.getAssistantById(conversation.assistantId) ?: settings.getCurrentAssistant()
     val hazeTintColor = MaterialTheme.colorScheme.surfaceContainerLow
-    val inputHazeStyle = HazeMaterials.thin(containerColor = hazeTintColor)
-    val filesHazeStyle = HazeMaterials.thin()
+    // 「毛玻璃主题」：模糊样式跟随强度档位（弱/中/强），玻璃关闭时保持原来的 thin
+    val glassConfig = rememberGlassConfig()
+    val inputHazeStyle = glassConfig?.hazeStyle(hazeTintColor) ?: HazeMaterials.thin(containerColor = hazeTintColor)
+    val filesHazeStyle = glassConfig?.hazeStyle(hazeTintColor) ?: HazeMaterials.thin()
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -377,10 +380,11 @@ fun ChatInput(
                     .fillMaxWidth()
                     .clip(MaterialTheme.shapes.largeIncreased)
                     .then(
-                        if (settings.displaySetting.enableBlurEffect) Modifier.hazeEffect(
+                        if (glassConfig != null && glassConfig.realBlur) Modifier.hazeEffect(
                             state = hazeState
                         ) {
                             blurEffect {
+                                blurRadius = glassConfig.blurRadius
                                 style = inputHazeStyle
                             }
                         }
@@ -389,7 +393,13 @@ fun ChatInput(
                 shape = MaterialTheme.shapes.largeIncreased,
                 tonalElevation = 0.dp,
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                color = if (settings.displaySetting.enableBlurEffect) Color.Transparent else hazeTintColor,
+                color = if (glassConfig != null && glassConfig.realBlur) {
+                    Color.Transparent
+                } else if (glassConfig != null) {
+                    hazeTintColor.copy(alpha = glassConfig.alpha)
+                } else {
+                    hazeTintColor
+                },
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -583,10 +593,11 @@ fun ChatInput(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(20.dp))
                             .then(
-                                if (settings.displaySetting.enableBlurEffect) Modifier.hazeEffect(
+                                if (glassConfig != null && glassConfig.realBlur) Modifier.hazeEffect(
                                     state = hazeState
                                 ) {
                                     blurEffect {
+                                        blurRadius = glassConfig.blurRadius
                                         style = filesHazeStyle
                                     }
                                 }
@@ -594,7 +605,13 @@ fun ChatInput(
                             ),
                         shape = RoundedCornerShape(20.dp),
                         tonalElevation = 0.dp,
-                        color = if (settings.displaySetting.enableBlurEffect) Color.Transparent else hazeTintColor,
+                        color = if (glassConfig != null && glassConfig.realBlur) {
+                            Color.Transparent
+                        } else if (glassConfig != null) {
+                            hazeTintColor.copy(alpha = glassConfig.alpha)
+                        } else {
+                            hazeTintColor
+                        },
                     ) {
                         FilesPicker(
                             conversation = conversation,

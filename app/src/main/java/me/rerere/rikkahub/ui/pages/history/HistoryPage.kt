@@ -43,6 +43,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,6 +54,8 @@ import me.rerere.rikkahub.Screen
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.context.LocalNavController
+import me.rerere.rikkahub.ui.theme.rememberGlassConfig
+import me.rerere.rikkahub.ui.theme.rememberGlassSurface
 import me.rerere.rikkahub.utils.navigateToChatPage
 import me.rerere.rikkahub.utils.plus
 import me.rerere.rikkahub.utils.toLocalDateTime
@@ -66,8 +69,11 @@ fun HistoryPage(vm: HistoryVM = koinViewModel()) {
     var showDeleteAllDialog by remember { mutableStateOf(false) }
 
     val conversations by vm.conversations.collectAsStateWithLifecycle()
+    // 「毛玻璃主题」：页面底色透明，让 App 背景图透上来
+    val glassConfig = rememberGlassConfig()
 
     Scaffold(
+        containerColor = if (glassConfig != null) Color.Transparent else MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {
@@ -227,11 +233,15 @@ private fun ConversationItem(
     onTogglePin: () -> Unit = {},
     onClick: () -> Unit = {},
 ) {
+    // 「毛玻璃主题」：历史列表条目玻璃化
+    val glassConfig = rememberGlassConfig()
+    val glassSurface = rememberGlassSurface(MaterialTheme.colorScheme.surfaceContainerLow, config = glassConfig)
     Surface(
         onClick = onClick,
-        tonalElevation = 2.dp,
+        tonalElevation = if (glassConfig != null) 0.dp else 2.dp,
+        color = if (glassConfig != null) glassSurface.color else MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(25),
-        modifier = modifier
+        modifier = modifier.then(glassSurface.modifier),
     ) {
         ListItem(
             headlineContent = {

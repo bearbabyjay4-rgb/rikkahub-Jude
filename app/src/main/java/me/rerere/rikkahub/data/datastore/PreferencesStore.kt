@@ -618,6 +618,17 @@ enum class ChatFontFamily {
     CUSTOM,
 }
 
+/** 「毛玻璃效果」的强度档位：弱 = 更实+轻模糊，强 = 更透+重模糊。 */
+@Serializable
+enum class GlassIntensity {
+    @SerialName("light")
+    LIGHT,
+    @SerialName("medium")
+    MEDIUM,
+    @SerialName("strong")
+    STRONG,
+}
+
 @Serializable
 data class DisplaySetting(
     val userAvatar: Avatar = Avatar.Dummy,
@@ -655,6 +666,9 @@ data class DisplaySetting(
     val enableAutoScroll: Boolean = true,
     val enableLatexRendering: Boolean = true,
     val enableBlurEffect: Boolean = false,
+    val glassIntensity: GlassIntensity = GlassIntensity.STRONG,
+    val glassLiteMode: Boolean = false,
+    val appBackground: String? = null,
     val chatFontFamily: ChatFontFamily = ChatFontFamily.DEFAULT,
     val chatCustomFontPath: String = "",
     val chatCustomFontName: String = "",

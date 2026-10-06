@@ -174,10 +174,30 @@ object CustomColors {
 
     val topBarColors: TopAppBarColors
         @Composable get() {
-            return if (!LocalDarkMode.current) TopAppBarDefaults.topAppBarColors(
-                containerColor = colorScheme.surfaceContainer,
-                scrolledContainerColor = colorScheme.surfaceContainer
-            ) else TopAppBarDefaults.topAppBarColors()
+            // 「毛玻璃主题」：顶栏与页面底色（多处 Scaffold 共用此色）一起变半透明，让 App 背景图透上来。
+            // 玻璃关闭时保持原样。
+            val glass = rememberGlassConfig()
+            return if (!LocalDarkMode.current) {
+                val container = if (glass != null) {
+                    colorScheme.surfaceContainer.copy(alpha = glass.alpha)
+                } else {
+                    colorScheme.surfaceContainer
+                }
+                TopAppBarDefaults.topAppBarColors(
+                    containerColor = container,
+                    scrolledContainerColor = container
+                )
+            } else {
+                if (glass != null) {
+                    val container = colorScheme.surface.copy(alpha = glass.alpha)
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = container,
+                        scrolledContainerColor = container
+                    )
+                } else {
+                    TopAppBarDefaults.topAppBarColors()
+                }
+            }
         }
 
     val cardColors: CardColors

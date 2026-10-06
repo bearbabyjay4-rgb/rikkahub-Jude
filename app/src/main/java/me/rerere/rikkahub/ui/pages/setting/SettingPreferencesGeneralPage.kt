@@ -9,6 +9,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -26,9 +29,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.DisplaySetting
+import me.rerere.rikkahub.data.datastore.GlassIntensity
 import me.rerere.rikkahub.ui.components.nav.BackButton
 import me.rerere.rikkahub.ui.components.ui.CardGroup
 import me.rerere.rikkahub.ui.hooks.rememberSharedPreferenceBoolean
+import me.rerere.rikkahub.ui.pages.assistant.detail.BackgroundPicker
 import me.rerere.rikkahub.ui.theme.CustomColors
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
@@ -160,6 +165,51 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                    if (displaySetting.enableBlurEffect) {
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_glass_intensity_title)) },
+                            supportingContent = {
+                                SingleChoiceSegmentedButtonRow(
+                                    modifier = Modifier.fillMaxWidth(),
+                                ) {
+                                    GlassIntensity.entries.forEachIndexed { index, intensity ->
+                                        SegmentedButton(
+                                            shape = SegmentedButtonDefaults.itemShape(
+                                                index = index,
+                                                count = GlassIntensity.entries.size,
+                                            ),
+                                            onClick = {
+                                                updateDisplaySetting(displaySetting.copy(glassIntensity = intensity))
+                                            },
+                                            selected = displaySetting.glassIntensity == intensity,
+                                        ) {
+                                            Text(
+                                                stringResource(
+                                                    when (intensity) {
+                                                        GlassIntensity.LIGHT -> R.string.setting_display_page_glass_intensity_light
+                                                        GlassIntensity.MEDIUM -> R.string.setting_display_page_glass_intensity_medium
+                                                        GlassIntensity.STRONG -> R.string.setting_display_page_glass_intensity_strong
+                                                    }
+                                                )
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                        )
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_glass_lite_mode_title)) },
+                            supportingContent = { Text(stringResource(R.string.setting_display_page_glass_lite_mode_desc)) },
+                            trailingContent = {
+                                Switch(
+                                    checked = displaySetting.glassLiteMode,
+                                    onCheckedChange = {
+                                        updateDisplaySetting(displaySetting.copy(glassLiteMode = it))
+                                    }
+                                )
+                            },
+                        )
+                    }
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_enable_message_generation_haptic_effect_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_enable_message_generation_haptic_effect_desc)) },
@@ -253,6 +303,20 @@ fun SettingPreferencesGeneralPage(vm: SettingVM = koinViewModel()) {
                             }
                         )
                     }
+                }
+            }
+
+            if (displaySetting.enableBlurEffect) {
+                item {
+                    BackgroundPicker(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        background = displaySetting.appBackground,
+                        labelResId = R.string.setting_display_page_app_background_title,
+                        descriptionResId = R.string.setting_display_page_app_background_desc,
+                        onUpdate = { uri ->
+                            updateDisplaySetting(displaySetting.copy(appBackground = uri))
+                        },
+                    )
                 }
             }
 

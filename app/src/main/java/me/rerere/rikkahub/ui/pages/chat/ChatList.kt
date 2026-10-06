@@ -101,6 +101,7 @@ import me.rerere.rikkahub.data.model.MessageNode
 import me.rerere.rikkahub.data.voice.chatVoiceReply
 import me.rerere.rikkahub.service.ChatError
 import me.rerere.rikkahub.ui.components.message.AssistantSplitRevealController
+import me.rerere.rikkahub.ui.components.message.TypingIndicatorBubble
 import me.rerere.rikkahub.ui.components.message.ChatMessage
 import me.rerere.rikkahub.ui.components.message.SplitRevealParams
 import me.rerere.rikkahub.ui.components.ui.ErrorCardsDisplay
@@ -477,22 +478,34 @@ private fun ChatListNormal(
 
             if (loading || splitRevealController.isRevealing) {
                 item(LoadingIndicatorKey) {
-                    Row(
-                        modifier = Modifier.padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        RabbitLoadingIndicator(
-                            modifier = Modifier.size(28.dp)
-                        )
-                        AnimatedVisibility(
-                            visible = processingStatus != null,
+                    if (loading) {
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
-                            Text(
-                                text = processingStatus ?: "",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            RabbitLoadingIndicator(
+                                modifier = Modifier.size(28.dp)
                             )
+                            AnimatedVisibility(
+                                visible = processingStatus != null,
+                            ) {
+                                Text(
+                                    text = processingStatus ?: "",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    } else {
+                        // 逐条弹出的等待间隙：三点「正在输入」气泡（生成中仍是兔子 loading）
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            horizontalArrangement = Arrangement.Start,
+                        ) {
+                            TypingIndicatorBubble()
                         }
                     }
                 }
