@@ -746,6 +746,10 @@
   <string name="setting_display_page_send_on_enter_title">Send on Enter</string>
   <string name="setting_display_page_show_assistant_bubble_desc">Whether to show bubble background for assistant messages</string>
   <string name="setting_display_page_show_assistant_bubble_title">Show Assistant Message Bubble</string>
+  <string name="setting_display_page_split_messages_desc">Split each reply into paragraph bubbles revealed one by one (pairs best with prompts that keep 2-4 short segments per reply)</string>
+  <string name="setting_display_page_split_messages_title">Segmented Sending</string>
+  <string name="setting_display_page_split_max_delay_title">Maximum Interval</string>
+  <string name="setting_display_page_split_min_delay_title">Minimum Interval</string>
   <string name="setting_display_page_show_date_below_name_desc">Whether to show message date below nickname or model name</string>
   <string name="setting_display_page_show_date_below_name_title">Show Date Below Name</string>
   <string name="setting_display_page_show_line_numbers_desc">Display line numbers in code blocks</string>

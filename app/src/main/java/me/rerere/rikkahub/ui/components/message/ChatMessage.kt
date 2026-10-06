@@ -138,6 +138,7 @@ fun ChatMessage(
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onOpenVoiceCallRecord: ((String) -> Unit)? = null,
     onUpdateTtsMessage: (messageId: kotlin.uuid.Uuid, transform: (UIMessage) -> UIMessage) -> Unit = { _, _ -> },
+    splitReveal: SplitRevealParams? = null,
 ) {
     val message = node.messages[node.selectIndex]
     val chatVoiceReply = message.chatVoiceReply()
@@ -267,6 +268,7 @@ fun ChatMessage(
                         onToolAnswer = onToolAnswer,
                         onUserMessageClick = if (message.role == MessageRole.USER) onEdit else null,
                         onTtsSpeak = onTtsSpeak,
+                        splitReveal = splitReveal,
                     )
                 }
             }
@@ -282,7 +284,7 @@ fun ChatMessage(
         val showActions = if (pendingChatVoiceReply) {
             false
         } else if (lastMessage) {
-            !loading
+            !loading && splitReveal == null
         } else {
             message.parts.isEmptyUIMessage().not()
         }
@@ -378,6 +380,7 @@ internal fun MessagePartsBlock(
     onToolAnswer: ((toolCallId: String, answer: String) -> Unit)? = null,
     onUserMessageClick: (() -> Unit)? = null,
     onTtsSpeak: ((String) -> Unit)? = null,
+    splitReveal: SplitRevealParams? = null,
 ) {
     val context = LocalContext.current
     val contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f)
@@ -419,6 +422,8 @@ internal fun MessagePartsBlock(
 
     // Render parts in original order (group thinking/tool as chain-of-thought)
     val groupedParts = remember(parts) { parts.groupMessageParts() }
+    // 「分段发送」只对最后一个文本块做逐条弹出
+    val lastTextPart = remember(parts) { parts.lastOrNull { it is UIMessagePart.Text } }
     groupedParts.fastForEach { block ->
         when (block) {
             is MessagePartBlock.ThinkingBlock -> {
@@ -503,8 +508,11 @@ internal fun MessagePartsBlock(
                                 scope = AssistantAffectScope.ASSISTANT,
                                 visual = true,
                             )
-                            val momentsChatStyle = assistant?.momentsChatStyle == true
-                            if (momentsChatStyle) {
+                            val splitMessagesOn = settings.displaySetting.splitAssistantMessages
+                            // 分段发送开启后：流式过程中仍是单气泡，生成完成后按段落气泡渲染并逐条弹出
+                            val useParagraphBubbles = assistant?.momentsChatStyle == true ||
+                                (splitMessagesOn && !loading)
+                            if (useParagraphBubbles) {
                                 AssistantTextContent(
                                     content = assistantContent,
                                     onClickCitation = handleClickCitation,
@@ -514,6 +522,7 @@ internal fun MessagePartsBlock(
                                     paragraphBubbleMode = true,
                                     modifier = Modifier.animateContentSize(),
                                     onTtsSpeak = onTtsSpeak,
+                                    splitReveal = splitReveal.takeIf { splitMessagesOn && part === lastTextPart },
                                 )
                             } else if (settings.displaySetting.showAssistantBubble) {
                                 Surface(
@@ -848,6 +857,7 @@ internal fun AssistantTextContent(
     paragraphBubbleMode: Boolean,
     modifier: Modifier = Modifier,
     onTtsSpeak: ((String) -> Unit)? = null,
+    splitReveal: SplitRevealParams? = null,
 ) {
     if (paragraphBubbleMode) {
         AssistantTextParagraphs(
@@ -859,6 +869,7 @@ internal fun AssistantTextContent(
             showParagraphTtsButtons = showParagraphTtsButtons,
             paragraphBubbleMode = true,
             onTtsSpeak = onTtsSpeak,
+            splitReveal = splitReveal,
         )
     } else if (showParagraphTtsButtons) {
         AssistantTextParagraphs(
@@ -870,6 +881,7 @@ internal fun AssistantTextContent(
             showParagraphTtsButtons = true,
             paragraphBubbleMode = false,
             onTtsSpeak = onTtsSpeak,
+            splitReveal = splitReveal,
         )
     } else if (selectionEnabled) {
         SelectionContainer(modifier = modifier) {
@@ -899,6 +911,7 @@ private fun AssistantTextParagraphs(
     showParagraphTtsButtons: Boolean,
     paragraphBubbleMode: Boolean,
     onTtsSpeak: ((String) -> Unit)? = null,
+    splitReveal: SplitRevealParams? = null,
 ) {
     val tts = LocalTTSState.current
     val isAvailable by tts.isAvailable.collectAsState()
@@ -908,12 +921,28 @@ private fun AssistantTextParagraphs(
         content.splitAssistantTextSegments()
     }
 
+    // 「分段发送」：逐条弹出；revealed == null 表示不在弹出中（全部直接显示）
+    val revealed: Int? = splitReveal?.let { it.controller.revealedCount(it.nodeId) }
+    val initialRevealed = remember(splitReveal?.nodeId) { revealed }
+    if (splitReveal != null) {
+        LaunchedEffect(splitReveal.nodeId, segments.size) {
+            splitReveal.controller.revealSegments(
+                nodeId = splitReveal.nodeId,
+                segmentCount = segments.size,
+                minDelayMs = splitReveal.minDelayMs,
+                maxDelayMs = splitReveal.maxDelayMs,
+            )
+        }
+    }
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        segments.fastForEach { segment ->
+        segments.fastForEachIndexed { index, segment ->
+            if (revealed != null && index >= revealed) return@fastForEachIndexed
+            RevealSegmentEnter(animate = revealed != null && index >= (initialRevealed ?: 0)) {
             when (segment) {
                 AssistantTextSegment.Divider -> {
                     HorizontalDivider(
@@ -1019,6 +1048,7 @@ private fun AssistantTextParagraphs(
                         codeBlockContent()
                     }
                 }
+            }
             }
         }
     }

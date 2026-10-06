@@ -712,6 +712,10 @@
   <string name="setting_display_page_send_on_enter_title">按Enter发送</string>
   <string name="setting_display_page_show_assistant_bubble_desc">是否为助手消息显示气泡背景</string>
   <string name="setting_display_page_show_assistant_bubble_title">显示助手消息气泡</string>
+  <string name="setting_display_page_split_messages_desc">回复按段落拆成多个气泡，逐条延迟弹出（配合「每条 2-4 条短句」的提示词效果最好）</string>
+  <string name="setting_display_page_split_messages_title">分段发送</string>
+  <string name="setting_display_page_split_max_delay_title">最长间隔</string>
+  <string name="setting_display_page_split_min_delay_title">最短间隔</string>
   <string name="setting_display_page_show_date_below_name_desc">是否在昵称或模型名称下方显示消息日期</string>
   <string name="setting_display_page_show_date_below_name_title">显示昵称下方日期</string>
   <string name="setting_display_page_show_line_numbers_desc">在代码块中显示行号</string>

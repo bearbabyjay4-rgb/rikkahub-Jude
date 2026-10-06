@@ -58,6 +58,7 @@ import me.rerere.rikkahub.ui.theme.rememberChatFontFamily
 import me.rerere.rikkahub.utils.plus
 import org.koin.androidx.compose.koinViewModel
 import java.io.File
+import kotlin.math.roundToInt
 
 @Composable
 fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
@@ -151,6 +152,74 @@ fun SettingPreferencesUIPage(vm: SettingVM = koinViewModel()) {
                             )
                         },
                     )
+                    item(
+                        headlineContent = { Text(stringResource(R.string.setting_display_page_split_messages_title)) },
+                        supportingContent = { Text(stringResource(R.string.setting_display_page_split_messages_desc)) },
+                        trailingContent = {
+                            Switch(
+                                checked = displaySetting.splitAssistantMessages,
+                                onCheckedChange = {
+                                    updateDisplaySetting(displaySetting.copy(splitAssistantMessages = it))
+                                }
+                            )
+                        },
+                    )
+                    if (displaySetting.splitAssistantMessages) {
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_split_min_delay_title)) },
+                            supportingContent = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Slider(
+                                        value = displaySetting.splitMinDelayMs.coerceIn(200, 5000) / 1000f,
+                                        onValueChange = {
+                                            val ms = (it * 1000).roundToInt().coerceIn(200, 5000)
+                                            updateDisplaySetting(
+                                                displaySetting.copy(
+                                                    splitMinDelayMs = ms,
+                                                    splitMaxDelayMs = maxOf(displaySetting.splitMaxDelayMs, ms),
+                                                )
+                                            )
+                                        },
+                                        valueRange = 0.2f..5f,
+                                        steps = 47,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(text = "${displaySetting.splitMinDelayMs.coerceIn(200, 5000) / 1000f}s")
+                                }
+                            },
+                        )
+                        item(
+                            headlineContent = { Text(stringResource(R.string.setting_display_page_split_max_delay_title)) },
+                            supportingContent = {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                ) {
+                                    Slider(
+                                        value = displaySetting.splitMaxDelayMs.coerceIn(200, 5000) / 1000f,
+                                        onValueChange = {
+                                            val ms = (it * 1000).roundToInt().coerceIn(200, 5000)
+                                            updateDisplaySetting(
+                                                displaySetting.copy(
+                                                    splitMaxDelayMs = ms,
+                                                    splitMinDelayMs = minOf(displaySetting.splitMinDelayMs, ms),
+                                                )
+                                            )
+                                        },
+                                        valueRange = 0.2f..5f,
+                                        steps = 47,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(text = "${displaySetting.splitMaxDelayMs.coerceIn(200, 5000) / 1000f}s")
+                                }
+                            },
+                        )
+                    }
                     item(
                         headlineContent = { Text(stringResource(R.string.setting_display_page_chat_list_model_icon_title)) },
                         supportingContent = { Text(stringResource(R.string.setting_display_page_chat_list_model_icon_desc)) },

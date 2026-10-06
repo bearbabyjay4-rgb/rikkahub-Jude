@@ -88,14 +88,21 @@ import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
+import me.rerere.ai.core.MessageRole
 import me.rerere.ai.ui.UIMessage
+import me.rerere.ai.ui.UIMessagePart
 import me.rerere.rikkahub.R
 import me.rerere.rikkahub.data.datastore.Settings
 import me.rerere.rikkahub.data.datastore.getAssistantById
 import me.rerere.rikkahub.data.model.Conversation
 import me.rerere.rikkahub.data.model.MessageNode
+import me.rerere.rikkahub.data.voice.chatVoiceReply
 import me.rerere.rikkahub.service.ChatError
+import me.rerere.rikkahub.ui.components.message.AssistantSplitRevealController
 import me.rerere.rikkahub.ui.components.message.ChatMessage
+import me.rerere.rikkahub.ui.components.message.SplitRevealParams
 import me.rerere.rikkahub.ui.components.ui.ErrorCardsDisplay
 import me.rerere.rikkahub.ui.components.ui.ListSelectableItem
 import me.rerere.rikkahub.ui.components.ui.RabbitLoadingIndicator
@@ -104,6 +111,8 @@ import me.rerere.rikkahub.ui.hooks.ImeLazyListAutoScroller
 import me.rerere.rikkahub.ui.theme.ChatFontProvider
 import me.rerere.rikkahub.utils.plus
 import kotlin.math.roundToInt
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 private const val TAG = "ChatList"
@@ -299,6 +308,38 @@ private fun ChatListNormal(
     }
     val lastMessageNodeId = displayedMessageNodes.lastOrNull()?.id
 
+    // 「分段发送」：只对"本屏刚刚生成完"的那条助手回复逐条弹出（打开历史会话不会重播）
+    val splitRevealController = remember(conversation.id) { AssistantSplitRevealController() }
+    val splitMessagesEnabled = settings.displaySetting.splitAssistantMessages
+    var previousLoading by remember(conversation.id) { mutableStateOf(loading) }
+    LaunchedEffect(loading, splitMessagesEnabled) {
+        if (previousLoading && !loading && splitMessagesEnabled) {
+            val lastNode = displayedMessageNodes.lastOrNull()
+            val lastMsg = lastNode?.currentMessage
+            val finishedFresh = lastMsg?.finishedAt?.let {
+                it.toInstant(TimeZone.currentSystemDefault()) > Clock.System.now() - 30.seconds
+            } == true
+            val hasText = lastMsg?.parts?.any { it is UIMessagePart.Text && it.text.isNotBlank() } == true
+            if (lastNode != null && lastMsg != null &&
+                lastMsg.role == MessageRole.ASSISTANT &&
+                finishedFresh && hasText && lastMsg.chatVoiceReply() == null
+            ) {
+                splitRevealController.start(lastNode.id)
+            }
+        }
+        previousLoading = loading
+    }
+    LaunchedEffect(splitMessagesEnabled) {
+        if (!splitMessagesEnabled) splitRevealController.finish()
+    }
+    // 兜底：弹出长时间未收尾（异常场景）时强制结束，避免尾部动画卡住
+    LaunchedEffect(splitRevealController.isRevealing) {
+        if (splitRevealController.isRevealing) {
+            delay(300_000)
+            if (splitRevealController.isRevealing) splitRevealController.finish()
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
     ) {
@@ -307,12 +348,20 @@ private fun ChatListNormal(
             LaunchedEffect(state) {
                 snapshotFlow { state.layoutInfo.visibleItemsInfo }.collect { visibleItemsInfo ->
                     // println("is bottom = ${visibleItemsInfo.isAtBottom()}, scroll = ${state.isScrollInProgress}, can_scroll = ${state.canScrollForward}, loading = $loading")
-                    if (!state.isScrollInProgress && loadingState) {
+                    if (!state.isScrollInProgress && (loadingState || splitRevealController.isRevealing)) {
                         if (visibleItemsInfo.isAtBottom()) {
                             state.requestScrollToItem(conversationUpdated.messageNodes.lastIndex + 10)
                             // Log.i(TAG, "ChatList: scroll to ${conversationUpdated.messageNodes.lastIndex}")
                         }
                     }
+                }
+            }
+            // 逐条弹出开始时，若在底部则发出粘性滚动请求（新气泡出现时自动跟随）
+            LaunchedEffect(splitRevealController.isRevealing) {
+                if (splitRevealController.isRevealing &&
+                    state.layoutInfo.visibleItemsInfo.isAtBottom()
+                ) {
+                    state.requestScrollToItem(conversationUpdated.messageNodes.lastIndex + 10)
                 }
             }
         }
@@ -401,6 +450,16 @@ private fun ChatListNormal(
                             onToolAnswer = onToolAnswer,
                             onOpenVoiceCallRecord = onOpenVoiceCallRecord,
                             lastMessage = node.id == lastMessageNodeId,
+                            splitReveal = if (splitRevealController.targetNodeId == node.id) {
+                                SplitRevealParams(
+                                    controller = splitRevealController,
+                                    nodeId = node.id,
+                                    minDelayMs = settings.displaySetting.splitMinDelayMs.coerceIn(50, 10_000),
+                                    maxDelayMs = settings.displaySetting.splitMaxDelayMs.coerceIn(50, 10_000),
+                                )
+                            } else {
+                                null
+                            },
                         )
                     }
                 }
@@ -416,7 +475,7 @@ private fun ChatListNormal(
                 }
             }
 
-            if (loading) {
+            if (loading || splitRevealController.isRevealing) {
                 item(LoadingIndicatorKey) {
                     Row(
                         modifier = Modifier.padding(8.dp),
