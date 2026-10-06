@@ -26,3 +26,10 @@ local.properties
 /app/src/androidTestPersonal/
 /scripts/personal/
 /personal.properties
+
+# 签名材料——永远不要进仓库（丢了/泄了都麻烦）
+*.jks
+*.keystore
+*.p12
+*.pfx
+keystore.properties

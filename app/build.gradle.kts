@@ -18,11 +18,11 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "me.rerere.rikkahub.jude"
+        applicationId = "me.rerere.rikkahub.lizi"
         minSdk = 26
         targetSdk = 37
         versionCode = 175
-        versionName = "v1.1.10"
+        versionName = "v1.1.10-lizi.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

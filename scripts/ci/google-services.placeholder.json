@@ -1,0 +1,49 @@
+{
+  "_readme": "占位 Firebase 配置。用途：还没建真 Firebase 项目时，让 google-services 插件能通过、编译不报错。里面的 key 全是假的，Crashlytics 不会上报（不影响 App 任何功能）。等你建了免费的 Firebase 项目，把真文件的内容存进 GitHub secret GOOGLE_SERVICES_JSON 即可覆盖本文件。",
+  "project_info": {
+    "project_number": "100000000000",
+    "project_id": "rikkahub-lizi",
+    "storage_bucket": "rikkahub-lizi.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:100000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "me.rerere.rikkahub.lizi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0000000000000000000000000000000000"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:100000000000:android:0000000000000000000001",
+        "android_client_info": {
+          "package_name": "me.rerere.rikkahub.lizi.debug"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD0000000000000000000000000000000000"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
