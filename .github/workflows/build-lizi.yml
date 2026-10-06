@@ -147,3 +147,12 @@ jobs:
           path: app/build/outputs/apk/public/*/*.apk
           if-no-files-found: error
           retention-days: 30
+
+      # 顺带带出 Room 编译时生成的数据库版式文件（28.json），下载后放进仓库存档
+      - name: 上传数据库版式（schema 28.json）
+        uses: actions/upload-artifact@v4
+        with:
+          name: rikkahub-lizi-schema
+          path: app/schemas/me.rerere.rikkahub.data.db.AppDatabase/28.json
+          if-no-files-found: warn
+          retention-days: 30

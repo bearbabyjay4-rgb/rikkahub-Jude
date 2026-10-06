@@ -33,7 +33,7 @@ import me.rerere.rikkahub.data.db.migrations.Migration_16_17
 import me.rerere.rikkahub.data.db.migrations.Migration_8_9
 import me.rerere.rikkahub.utils.JsonInstant
 
-const val APP_DATABASE_VERSION = 27
+const val APP_DATABASE_VERSION = 28
 
 @Database(
     entities = [
