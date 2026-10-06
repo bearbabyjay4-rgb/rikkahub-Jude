@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -140,12 +141,18 @@ fun ChatDrawerContent(
     // Menu popup 状态
     var showMenuPopup by remember { mutableStateOf(false) }
 
-    // 「毛玻璃主题」：侧边抽屉同样做玻璃（真模糊时透明底 + Haze 着色）
-    val drawerGlass = rememberGlassSurface(MaterialTheme.colorScheme.surfaceContainerLow)
+    // 「液态玻璃」：侧边抽屉同样玻璃化（圆角与抽屉默认形状一致；边缘不描高光以免贴边生硬）
+    val drawerGlassShape = RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp)
+    val drawerGlass = rememberGlassSurface(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = drawerGlassShape,
+        withBorder = false,
+    )
     ModalDrawerSheet(
         modifier = Modifier
             .width(300.dp)
             .then(drawerGlass.modifier),
+        drawerShape = drawerGlassShape,
         drawerContainerColor = drawerGlass.color,
     ) {
         Column(

@@ -36,6 +36,7 @@ fun TypingIndicatorBubble(modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(if (glassConfig != null) 14.dp else 8.dp)
     val glassSurface = rememberGlassSurface(
         containerColor = assistantMessageBubbleColor(),
+        shape = shape,
         config = glassConfig,
     )
     Surface(

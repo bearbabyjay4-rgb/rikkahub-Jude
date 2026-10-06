@@ -485,9 +485,12 @@ internal fun MessagePartsBlock(
                                     onClick = onUserMessageClick,
                                 )
                             } else {
-                                // 「毛玻璃主题」：用户气泡同样玻璃化（真模糊时底色透明，由 Haze 着色）
+                                // 「液态玻璃」：用户气泡同样玻璃化（真模糊时底色透明，由 Haze 着色）
                                 val userBubbleShape = RoundedCornerShape(16.dp)
-                                val userGlassSurface = rememberGlassSurface(MaterialTheme.colorScheme.primaryContainer)
+                                val userGlassSurface = rememberGlassSurface(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    shape = userBubbleShape,
+                                )
                                 val userTextContent = @Composable {
                                     Surface(
                                         modifier = Modifier
@@ -549,9 +552,12 @@ internal fun MessagePartsBlock(
                                         splitReveal = splitReveal.takeIf { splitMessagesOn && part === lastTextPart },
                                     )
                                 } else if (settings.displaySetting.showAssistantBubble) {
-                                    // 「毛玻璃主题」：助手单气泡玻璃化
+                                    // 「液态玻璃」：助手单气泡玻璃化
                                     val assistantBubbleShape = RoundedCornerShape(16.dp)
-                                    val assistantGlassSurface = rememberGlassSurface(assistantMessageBubbleColor())
+                                    val assistantGlassSurface = rememberGlassSurface(
+                                        containerColor = assistantMessageBubbleColor(),
+                                        shape = assistantBubbleShape,
+                                    )
                                     Surface(
                                         modifier = Modifier
                                             .animateContentSize()
@@ -1043,10 +1049,14 @@ private fun AssistantTextParagraphs(
                         }
                     }
                     if (paragraphBubbleMode) {
-                        // 「毛玻璃主题」：段落气泡玻璃化 + 圆角加大（8dp → 14dp）
+                        // 「液态玻璃」：段落气泡玻璃化 + 圆角加大（8dp → 14dp）
                         val glassConfig = rememberGlassConfig()
                         val paragraphShape = RoundedCornerShape(if (glassConfig != null) 14.dp else 8.dp)
-                        val paragraphGlassSurface = rememberGlassSurface(paragraphBubbleColor, config = glassConfig)
+                        val paragraphGlassSurface = rememberGlassSurface(
+                            containerColor = paragraphBubbleColor,
+                            shape = paragraphShape,
+                            config = glassConfig,
+                        )
                         Surface(
                             modifier = Modifier
                                 .animateContentSize()

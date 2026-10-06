@@ -116,20 +116,22 @@ private fun CardGroupListItem(
         animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
     )
 
-    // 「毛玻璃主题」：设置/列表卡片统一的玻璃处理（真模糊时透明底由 Haze 着色，轻量模式则半透明）
-    val glassSurface = rememberGlassSurface(MaterialTheme.colorScheme.surfaceBright)
+    // 「液态玻璃」：设置/列表卡片统一的玻璃处理（阴影 + 边缘高光 + 模糊 + 渐变着色）
+    val itemShape = RoundedCornerShape(
+        topStart = topCorner,
+        topEnd = topCorner,
+        bottomStart = bottomCorner,
+        bottomEnd = bottomCorner,
+    )
+    val glassSurface = rememberGlassSurface(
+        containerColor = MaterialTheme.colorScheme.surfaceBright,
+        shape = itemShape,
+    )
     ListItem(
         headlineContent = item.headlineContent,
         modifier = item.modifier
             .fillMaxWidth()
-            .clip(
-                RoundedCornerShape(
-                    topStart = topCorner,
-                    topEnd = topCorner,
-                    bottomStart = bottomCorner,
-                    bottomEnd = bottomCorner,
-                )
-            )
+            .clip(itemShape)
             .then(glassSurface.modifier)
             .then(
                 if (item.onClick != null) {

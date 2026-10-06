@@ -179,7 +179,7 @@ object CustomColors {
             val glass = rememberGlassConfig()
             return if (!LocalDarkMode.current) {
                 val container = if (glass != null) {
-                    colorScheme.surfaceContainer.copy(alpha = glass.alpha)
+                    colorScheme.surfaceContainer.copy(alpha = glass.liteAlpha)
                 } else {
                     colorScheme.surfaceContainer
                 }
@@ -189,7 +189,7 @@ object CustomColors {
                 )
             } else {
                 if (glass != null) {
-                    val container = colorScheme.surface.copy(alpha = glass.alpha)
+                    val container = colorScheme.surface.copy(alpha = glass.liteAlpha)
                     TopAppBarDefaults.topAppBarColors(
                         containerColor = container,
                         scrolledContainerColor = container

@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -57,11 +59,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.dokar.sonner.ToastType
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
-import dev.chrisbanes.haze.blur.blurEffect
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import me.rerere.ai.provider.Model
@@ -355,7 +354,6 @@ private fun ChatPageContent(
             topBar = {
                 TopBar(
                     settings = setting,
-                    hazeState = hazeState,
                     conversation = conversation,
                     bigScreen = bigScreen,
                     drawerState = drawerState,
@@ -725,7 +723,6 @@ private fun ChatPageContent(
 @Composable
 private fun TopBar(
     settings: Settings,
-    hazeState: HazeState,
     conversation: Conversation,
     drawerState: DrawerState,
     bigScreen: Boolean,
@@ -847,27 +844,24 @@ private fun TopBar(
         }
     }
 
-    // 「毛玻璃主题」：顶栏做真实背景模糊（透明底 + Haze 着色），轻量模式则用半透明底色
+    // 「液态玻璃」：顶栏做成悬浮的圆角玻璃卡（与预览定稿一致）；关闭时保持原来的全透明
     val glassConfig = rememberGlassConfig()
-    val glassBarBase = MaterialTheme.colorScheme.surfaceContainerLow
-    val glassBarStyle = if (glassConfig != null) glassConfig.hazeStyle(glassBarBase) else null
+    val barGlassShape = RoundedCornerShape(20.dp)
+    val barGlassSurface = rememberGlassSurface(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = barGlassShape,
+        config = glassConfig,
+    )
     TopAppBar(
-        modifier = if (glassConfig != null && glassConfig.realBlur && glassBarStyle != null) {
-            Modifier.hazeEffect(hazeState) {
-                blurEffect {
-                    blurRadius = glassConfig.blurRadius
-                    style = glassBarStyle
-                }
-            }
+        modifier = if (glassConfig != null) {
+            Modifier
+                .padding(horizontal = 10.dp, vertical = 6.dp)
+                .then(barGlassSurface.modifier)
         } else {
             Modifier
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = if (glassConfig != null && !glassConfig.realBlur) {
-                glassBarBase.copy(alpha = glassConfig.alpha)
-            } else {
-                Color.Transparent
-            },
+            containerColor = if (glassConfig != null) barGlassSurface.color else Color.Transparent,
         ),
         navigationIcon = {
             if (!bigScreen) {

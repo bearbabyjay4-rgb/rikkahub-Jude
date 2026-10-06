@@ -233,9 +233,13 @@ private fun ConversationItem(
     onTogglePin: () -> Unit = {},
     onClick: () -> Unit = {},
 ) {
-    // 「毛玻璃主题」：历史列表条目玻璃化
+    // 「液态玻璃」：历史列表条目玻璃化
     val glassConfig = rememberGlassConfig()
-    val glassSurface = rememberGlassSurface(MaterialTheme.colorScheme.surfaceContainerLow, config = glassConfig)
+    val glassSurface = rememberGlassSurface(
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(25),
+        config = glassConfig,
+    )
     Surface(
         onClick = onClick,
         tonalElevation = if (glassConfig != null) 0.dp else 2.dp,

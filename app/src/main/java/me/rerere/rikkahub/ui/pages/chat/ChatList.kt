@@ -392,7 +392,9 @@ private fun ChatListNormal(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier
                         .fillMaxSize()
-                        .hazeSource(state = hazeState),
+                        // zIndex=1：消息列表是"更上层"的模糊源。这样列表内部的气泡（Haze 规则：只消费
+                        // zIndex 更低的源）会明确地模糊壁纸（0），而列表外的顶栏/输入栏则消费全部源。
+                        .hazeSource(state = hazeState, zIndex = 1f),
                 ) {
 
             itemsIndexed(
@@ -779,7 +781,7 @@ private fun ChatListPreview(
         modifier = Modifier
             .padding(top = innerPadding.calculateTopPadding())
             .fillMaxSize()
-            .hazeSource(state = hazeState),
+            .hazeSource(state = hazeState, zIndex = 1f),
     ) {
         // 搜索框
         OutlinedTextField(

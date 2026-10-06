@@ -82,9 +82,6 @@ import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import com.dokar.sonner.ToastType
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.blur.blurEffect
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.blur.materials.HazeMaterials
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import me.rerere.ai.provider.Model
@@ -163,10 +160,8 @@ fun ChatInput(
     val toaster = LocalToaster.current
     val assistant = settings.getAssistantById(conversation.assistantId) ?: settings.getCurrentAssistant()
     val hazeTintColor = MaterialTheme.colorScheme.surfaceContainerLow
-    // 「毛玻璃主题」：模糊样式跟随强度档位（弱/中/强），玻璃关闭时保持原来的 thin
+    // 「液态玻璃」总开关配置（null = 关闭，一切保持原样）
     val glassConfig = rememberGlassConfig()
-    val inputHazeStyle = glassConfig?.hazeStyle(hazeTintColor) ?: HazeMaterials.thin(containerColor = hazeTintColor)
-    val filesHazeStyle = glassConfig?.hazeStyle(hazeTintColor) ?: HazeMaterials.thin()
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val focusManager = LocalFocusManager.current
@@ -375,31 +370,24 @@ fun ChatInput(
                 .padding(horizontal = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // 「液态玻璃」：输入栏走统一玻璃助手（阴影 + 边缘高光 + 模糊 + 渐变着色）
+            val inputGlassSurface = rememberGlassSurface(
+                containerColor = hazeTintColor,
+                shape = MaterialTheme.shapes.largeIncreased,
+                config = glassConfig,
+            )
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.largeIncreased)
-                    .then(
-                        if (glassConfig != null && glassConfig.realBlur) Modifier.hazeEffect(
-                            state = hazeState
-                        ) {
-                            blurEffect {
-                                blurRadius = glassConfig.blurRadius
-                                style = inputHazeStyle
-                            }
-                        }
-                        else Modifier
-                    ),
+                    .then(inputGlassSurface.modifier),
                 shape = MaterialTheme.shapes.largeIncreased,
                 tonalElevation = 0.dp,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                color = if (glassConfig != null && glassConfig.realBlur) {
-                    Color.Transparent
-                } else if (glassConfig != null) {
-                    hazeTintColor.copy(alpha = glassConfig.alpha)
+                border = if (glassConfig == null) {
+                    BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 } else {
-                    hazeTintColor
+                    null
                 },
+                color = inputGlassSurface.color,
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -588,30 +576,18 @@ fun ChatInput(
                     dismissExpand()
                 }
                 if (expand == ExpandState.Files) {
+                    val filesGlassSurface = rememberGlassSurface(
+                        containerColor = hazeTintColor,
+                        shape = RoundedCornerShape(20.dp),
+                        config = glassConfig,
+                    )
                     Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(20.dp))
-                            .then(
-                                if (glassConfig != null && glassConfig.realBlur) Modifier.hazeEffect(
-                                    state = hazeState
-                                ) {
-                                    blurEffect {
-                                        blurRadius = glassConfig.blurRadius
-                                        style = filesHazeStyle
-                                    }
-                                }
-                                else Modifier
-                            ),
+                            .then(filesGlassSurface.modifier),
                         shape = RoundedCornerShape(20.dp),
                         tonalElevation = 0.dp,
-                        color = if (glassConfig != null && glassConfig.realBlur) {
-                            Color.Transparent
-                        } else if (glassConfig != null) {
-                            hazeTintColor.copy(alpha = glassConfig.alpha)
-                        } else {
-                            hazeTintColor
-                        },
+                        color = filesGlassSurface.color,
                     ) {
                         FilesPicker(
                             conversation = conversation,
